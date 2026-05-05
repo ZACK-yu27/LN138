@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科学计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(120, 119, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(255, 107, 149, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(78, 205, 196, 0.08) 0%, transparent 60%);
+            animation: floatBg 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatBg {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-1deg); }
+        }
+
+        .calculator {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 40px;
+            padding: 30px;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 150px rgba(255, 255, 255, 0.05);
+        }
+
+        .display-container {
+            margin-bottom: 12px;
+        }
+
+        .display {
+            width: 360px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            margin-bottom: 8px;
+            padding: 10px 20px;
+            font-size: 42px;
+            font-weight: 300;
+            text-align: right;
+            overflow: hidden;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .preview {
+            width: 360px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 8px 20px;
+            font-size: 20px;
+            font-weight: 400;
+            text-align: right;
+            overflow: hidden;
+            color: rgba(255, 255, 255, 0.55);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .mode-indicator {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: rgba(78, 205, 196, 0.3);
+            color: #fff;
+            border-color: rgba(78, 205, 196, 0.5);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            width: 62px;
+            height: 52px;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.22);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .num-btn {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .num-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .func-btn {
+            background: rgba(78, 205, 196, 0.25);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+        }
+
+        .func-btn:hover {
+            background: rgba(78, 205, 196, 0.4);
+        }
+
+        .func-btn:active {
+            background: rgba(78, 205, 196, 0.5);
+        }
+
+        .operator {
+            background: rgba(255, 149, 0, 0.35);
+            color: #fff;
+            border-color: rgba(255, 149, 0, 0.3);
+        }
+
+        .operator:hover {
+            background: rgba(255, 149, 0, 0.5);
+            box-shadow: 
+                0 6px 20px rgba(255, 149, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .operator:active {
+            background: rgba(255, 149, 0, 0.6);
+        }
+
+        .clear {
+            background: rgba(255, 59, 48, 0.35);
+            color: #fff;
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+
+        .clear:hover {
+            background: rgba(255, 59, 48, 0.5);
+            box-shadow: 
+                0 6px 20px rgba(255, 59, 48, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .clear:active {
+            background: rgba(255, 59, 48, 0.6);
+        }
+
+        .equals {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.4) 0%, rgba(46, 204, 113, 0.4) 100%);
+            color: #fff;
+            border-color: rgba(52, 199, 89, 0.3);
+            box-shadow: 
+                0 4px 20px rgba(52, 199, 89, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .equals:hover {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.55) 0%, rgba(46, 204, 113, 0.55) 100%);
+            box-shadow: 
+                0 8px 30px rgba(52, 199, 89, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .equals:active {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.7) 0%, rgba(46, 204, 113, 0.7) 100%);
+        }
+
+        .const-btn {
+            background: rgba(156, 39, 176, 0.35);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .const-btn:hover {
+            background: rgba(156, 39, 176, 0.5);
+        }
+
+        .const-btn:active {
+            background: rgba(156, 39, 176, 0.6);
+        }
+
+        @keyframes press {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.92); }
+            100% { transform: scale(1); }
+        }
+
+        .press-anim {
+            animation: press 0.15s ease-out;
+        }
+
+        .button-row {
+            display: contents;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="mode-indicator">
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="degBtn" onclick="setAngleMode('deg')">DEG</button>
+                <button class="mode-btn" id="radBtn" onclick="setAngleMode('rad')">RAD</button>
+            </div>
+            <span style="color: rgba(255,255,255,0.4); font-size: 12px;">科学计算器</span>
+        </div>
+        <div class="display-container">
+            <div class="preview" id="preview"></div>
+            <div class="display" id="display">0</div>
+        </div>
+        <div class="buttons">
+            <button class="func-btn" onclick="insertFunc('sin')">sin</button>
+            <button class="func-btn" onclick="insertFunc('cos')">cos</button>
+            <button class="func-btn" onclick="insertFunc('tan')">tan</button>
+            <button class="func-btn" onclick="insertFunc('log')">log</button>
+            <button class="func-btn" onclick="insertFunc('ln')">ln</button>
+            
+            <button class="func-btn" onclick="insertFunc('asin')">sin⁻¹</button>
+            <button class="func-btn" onclick="insertFunc('acos')">cos⁻¹</button>
+            <button class="func-btn" onclick="insertFunc('atan')">tan⁻¹</button>
+            <button class="func-btn" onclick="insertFunc('sqrt')">√</button>
+            <button class="func-btn" onclick="insertFunc('cbrt')">∛</button>
+            
+            <button class="func-btn" onclick="insertPower('^')">x^y</button>
+            <button class="func-btn" onclick="appendChar('^2')">x²</button>
+            <button class="func-btn" onclick="appendChar('^3')">x³</button>
+            <button class="func-btn" onclick="insertFunc('abs')">|x|</button>
+            <button class="func-btn" onclick="insertFunc('fact')">n!</button>
+            
+            <button class="const-btn" onclick="appendChar('π')">π</button>
+            <button class="const-btn" onclick="appendChar('e')">e</button>
+            <button class="func-btn" onclick="insertFunc('exp')">e^x</button>
+            <button class="func-btn" onclick="insertFunc('10pow')">10^x</button>
+            <button class="func-btn" onclick="insertFunc('cube')">x³</button>
+            
+            <button class="clear" onclick="clearDisplay(); animateBtn(this)">C</button>
+            <button onclick="appendChar('('); animateBtn(this)">(</button>
+            <button onclick="appendChar(')'); animateBtn(this)">)</button>
+            <button onclick="deleteChar(); animateBtn(this)" class="operator">⌫</button>
+            <button onclick="appendChar('/'); animateBtn(this)" class="operator">÷</button>
+            
+            <button onclick="appendChar('7'); animateBtn(this)" class="num-btn">7</button>
+            <button onclick="appendChar('8'); animateBtn(this)" class="num-btn">8</button>
+            <button onclick="appendChar('9'); animateBtn(this)" class="num-btn">9</button>
+            <button onclick="appendChar('*'); animateBtn(this)" class="operator">×</button>
+            <button onclick="insertFunc('inv')" class="func-btn">1/x</button>
+            
+            <button onclick="appendChar('4'); animateBtn(this)" class="num-btn">4</button>
+            <button onclick="appendChar('5'); animateBtn(this)" class="num-btn">5</button>
+            <button onclick="appendChar('6'); animateBtn(this)" class="num-btn">6</button>
+            <button onclick="appendChar('-'); animateBtn(this)" class="operator">-</button>
+            <button onclick="appendChar('%'); animateBtn(this)" class="func-btn">%</button>
+            
+            <button onclick="appendChar('1'); animateBtn(this)" class="num-btn">1</button>
+            <button onclick="appendChar('2'); animateBtn(this)" class="num-btn">2</button>
+            <button onclick="appendChar('3'); animateBtn(this)" class="num-btn">3</button>
+            <button onclick="appendChar('+'); animateBtn(this)" class="operator">+</button>
+            <button class="func-btn" onclick="toggleSign()" style="font-size: 20px;">±</button>
+            
+            <button onclick="appendChar('0'); animateBtn(this)" class="num-btn">0</button>
+            <button onclick="appendChar('.'); animateBtn(this)" class="num-btn">.</button>
+            <button onclick="appendChar('00'); animateBtn(this)" class="num-btn">00</button>
+            <button onclick="calculate(); animateBtn(this)" class="equals" style="grid-column: span 2;">=</button>
+        </div>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const preview = document.getElementById('preview');
+        const degBtn = document.getElementById('degBtn');
+        const radBtn = document.getElementById('radBtn');
+        let currentExpression = '0';
+        let expressionHistory = '';
+        let angleMode = 'deg';
+
+        const PI = Math.PI;
+        const E = Math.E;
+
+        function setAngleMode(mode) {
+            angleMode = mode;
+            if (mode === 'deg') {
+                degBtn.classList.add('active');
+                radBtn.classList.remove('active');
+            } else {
+                radBtn.classList.add('active');
+                degBtn.classList.remove('active');
+            }
+        }
+
+        function toRadians(angle) {
+            if (angleMode === 'deg') {
+                return angle * PI / 180;
+            }
+            return angle;
+        }
+
+        function toDegrees(angle) {
+            if (angleMode === 'deg') {
+                return angle * 180 / PI;
+            }
+            return angle;
+        }
+
+        function animateBtn(btn) {
+            btn.classList.add('press-anim');
+            setTimeout(() => btn.classList.remove('press-anim'), 150);
+        }
+
+        function updateDisplay() {
+            display.textContent = currentExpression;
+            preview.textContent = expressionHistory;
+        }
+
+        function appendChar(char) {
+            if (currentExpression === '0' && char !== '.') {
+                currentExpression = char;
+            } else {
+                currentExpression += char;
+            }
+            expressionHistory = currentExpression;
+            updateDisplay();
+        }
+
+        function insertFunc(func) {
+            const funcs = {
+                'sin': 'sin(',
+                'cos': 'cos(',
+                'tan': 'tan(',
+                'asin': 'asin(',
+                'acos': 'acos(',
+                'atan': 'atan(',
+                'log': 'log(',
+                'ln': 'ln(',
+                'sqrt': 'sqrt(',
+                'cbrt': 'cbrt(',
+                'abs': 'abs(',
+                'fact': 'fact(',
+                'exp': 'exp(',
+                '10pow': '10^(',
+                'inv': '1/(',
+                'pi': '2*π'
+            };
+            if (funcs[func]) {
+                appendChar(funcs[func]);
+            }
+        }
+
+        function insertPower(pow) {
+            appendChar('^' + '(');
+        }
+
+        function toggleSign() {
+            if (currentExpression !== '0') {
+                if (currentExpression.startsWith('-')) {
+                    currentExpression = currentExpression.substring(1);
+                } else {
+                    currentExpression = '-' + currentExpression;
+                }
+                expressionHistory = currentExpression;
+                updateDisplay();
+            }
+        }
+
+        function clearDisplay() {
+            currentExpression = '0';
+            expressionHistory = '';
+            updateDisplay();
+        }
+
+        function deleteChar() {
+            if (currentExpression.length === 1 || currentExpression === '0') {
+                currentExpression = '0';
+            } else {
+                currentExpression = currentExpression.slice(0, -1);
+            }
+            expressionHistory = currentExpression;
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            if (n > 170) return Infinity;
+            if (!Number.isInteger(n)) return gamma(n + 1);
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function gamma(z) {
+            if (z < 0.5) {
+                return PI / (Math.sin(PI * z) * gamma(1 - z));
+            }
+            z -= 1;
+            const g = 7;
+            const c = [
+                0.99999999999980993,
+                676.5203681218851,
+                -1259.1392167224028,
+                771.32342877765313,
+                -176.61502916214059,
+                12.507343278686905,
+                -0.13857109526572012,
+                9.9843695780195716e-6,
+                1.5056327351493116e-7
+            ];
+            let x = c[0];
+            for (let i = 1; i < g + 2; i++) {
+                x += c[i] / (z + i);
+            }
+            const t = z + g + 0.5;
+            return Math.sqrt(2 * PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+        }
+
+        function safeEval(expr) {
+            expr = expr.replace(/π/g, `(${PI})`);
+            expr = expr.replace(/e(?![x])/g, `(${E})`);
+            expr = expr.replace(/sin\(([^)]+)\)/g, (_, x) => `Math.sin(${toRadians(eval(x))})`);
+            expr = expr.replace(/cos\(([^)]+)\)/g, (_, x) => `Math.cos(${toRadians(eval(x))})`);
+            expr = expr.replace(/tan\(([^)]+)\)/g, (_, x) => `Math.tan(${toRadians(eval(x))})`);
+            expr = expr.replace(/asin\(([^)]+)\)/g, (_, x) => `(${toDegrees(Math.asin(eval(x)))})`);
+            expr = expr.replace(/acos\(([^)]+)\)/g, (_, x) => `(${toDegrees(Math.acos(eval(x)))})`);
+            expr = expr.replace(/atan\(([^)]+)\)/g, (_, x) => `(${toDegrees(Math.atan(eval(x)))})`);
+            expr = expr.replace(/log\(([^)]+)\)/g, (_, x) => `(Math.log10(${eval(x)}))`);
+            expr = expr.replace(/ln\(([^)]+)\)/g, (_, x) => `(Math.log(${eval(x)}))`);
+            expr = expr.replace(/sqrt\(([^)]+)\)/g, (_, x) => `(Math.sqrt(${eval(x)}))`);
+            expr = expr.replace(/cbrt\(([^)]+)\)/g, (_, x) => `(Math.cbrt(${eval(x)}))`);
+            expr = expr.replace(/abs\(([^)]+)\)/g, (_, x) => `(Math.abs(${eval(x)}))`);
+            expr = expr.replace(/exp\(([^)]+)\)/g, (_, x) => `(Math.exp(${eval(x)}))`);
+            expr = expr.replace(/10\^\(([^)]+)\)/g, (_, x) => `(Math.pow(10,${eval(x)}))`);
+            expr = expr.replace(/fact\(([^)]+)\)/g, (_, x) => `(${factorial(eval(x))})`);
+            expr = expr.replace(/(\d+)!\)/g, 'fact($1)');
+            expr = expr.replace(/(\d+)!\+/g, 'fact($1)+');
+            expr = expr.replace(/(\d+)!\-/g, 'fact($1)-');
+            expr = expr.replace(/(\d+)!\*/g, 'fact($1)*');
+            expr = expr.replace(/(\d+)!\//g, 'fact($1)/');
+            expr = expr.replace(/×/g, '*');
+            expr = expr.replace(/÷/g, '/');
+            expr = expr.replace(/\^2/g, '**2');
+            expr = expr.replace(/\^3/g, '**3');
+            expr = expr.replace(/\^\(/g, '**(');
+            expr = expr.replace(/(\d+)!/g, (_, n) => factorial(parseInt(n)));
+            
+            return eval(expr);
+        }
+
+        function calculate() {
+            try {
+                const result = safeEval(currentExpression);
+                if (isNaN(result)) {
+                    throw new Error('数学错误');
+                }
+                expressionHistory = currentExpression + ' =';
+                if (!isFinite(result)) {
+                    currentExpression = result > 0 ? '∞' : '-∞';
+                } else if (Number.isInteger(result) && Math.abs(result) < 1e15) {
+                    currentExpression = String(result);
+                } else {
+                    currentExpression = parseFloat(result.toPrecision(12)).toString();
+                }
+                updateDisplay();
+            } catch (e) {
+                currentExpression = '错误';
+                updateDisplay();
+                setTimeout(() => {
+                    currentExpression = '0';
+                    expressionHistory = '';
+                    updateDisplay();
+                }, 1500);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if ((key >= '0' && key <= '9') || key === '.') {
+                appendChar(key);
+            } else if (key === '+' || key === '-') {
+                appendChar(key);
+            } else if (key === '*') {
+                appendChar('×');
+            } else if (key === '/') {
+                appendChar('÷');
+            } else if (key === '(' || key === ')') {
+                appendChar(key);
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === 'Escape') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                deleteChar();
+            } else if (key === '^') {
+                appendChar('^');
+            } else if (key === 'p') {
+                appendChar('π');
+            }
+        });
+    </script>
+</body>
+</html>
